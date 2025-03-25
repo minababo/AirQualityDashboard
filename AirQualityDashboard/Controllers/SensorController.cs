@@ -141,5 +141,7 @@ namespace AirQualityDashboard.Controllers
         {
             return _context.Sensors.Any(e => e.SensorId == id);
         }
+
+
     }
 }

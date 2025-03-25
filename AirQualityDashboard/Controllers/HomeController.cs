@@ -28,5 +28,10 @@ namespace AirQualityDashboard.Controllers
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
+
+        public IActionResult TestMap()
+        {
+            return View();
+        }
     }
 }
