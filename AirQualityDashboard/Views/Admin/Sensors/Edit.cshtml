@@ -1,0 +1,92 @@
+﻿@model Sensor
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+<h1>Edit</h1>
+
+<h4>Sensor</h4>
+<hr />
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="SensorId" />
+            <div class="form-group">
+                <label asp-for="SensorName" class="control-label"></label>
+                <input asp-for="SensorName" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="LocationName" class="control-label"></label>
+                <input asp-for="LocationName" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="Latitude" class="control-label"></label>
+                <input asp-for="Latitude" class="form-control" id="Latitude" />
+            </div>
+            <div class="form-group">
+                <label asp-for="Longitude" class="control-label"></label>
+                <input asp-for="Longitude" class="form-control" id="Longitude" />
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="IsActive" /> @Html.DisplayNameFor(model => model.IsActive)
+                </label>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-6">
+        <label>Update Location</label>
+        <div id="map" style="height: 400px;"></div>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        var lat = parseFloat(document.getElementById('Latitude').value);
+        var lng = parseFloat(document.getElementById('Longitude').value);
+
+        var map = L.map('map').setView([lat || 6.9271, lng || 79.8612], 11);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        var marker = null;
+
+        if (!isNaN(lat) && !isNaN(lng)) {
+            marker = L.marker([lat, lng]).addTo(map);
+            map.setView([lat, lng], 13);
+        }
+
+        map.on('click', function (e) {
+            lat = e.latlng.lat.toFixed(6);
+            lng = e.latlng.lng.toFixed(6);
+
+            document.getElementById('Latitude').value = lat;
+            document.getElementById('Longitude').value = lng;
+
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng).addTo(map);
+            }
+        });
+    </script>
+}

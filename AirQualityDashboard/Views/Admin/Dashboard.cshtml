@@ -1,0 +1,14 @@
+﻿@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<h1>Monitoring Admin Dashboard</h1>
+
+<div>
+    <p><strong>Total Sensors:</strong> @ViewBag.TotalSensors</p>
+    <p><strong>Active Sensors:</strong> @ViewBag.ActiveSensors</p>
+</div>
+
+<div>
+    <a href="@Url.Action("Index", "Sensor")" class="btn btn-primary">Manage Sensors</a>
+</div>
