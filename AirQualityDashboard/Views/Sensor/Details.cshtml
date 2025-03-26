@@ -1,7 +1,9 @@
-﻿@model Sensor
+﻿@using System.Text.Json
+@model Sensor
 
 @{
     ViewData["Title"] = "Sensor Details";
+    var selectedFilter = ViewData["Filter"]?.ToString() ?? "24h";
 }
 
 <h1>Sensor Details</h1>
@@ -20,22 +22,162 @@
     <a asp-action="Index" class="btn btn-secondary">Back to List</a>
 </div>
 
+<form method="get" asp-action="Details" asp-route-id="@Model.SensorId" class="mb-3 mt-4">
+    <label for="filter">Show data from:</label>
+    <select name="filter" id="filter" onchange="this.form.submit()" class="form-select w-auto d-inline mx-2">
+        <option value="24h" selected="@((selectedFilter == "24h").ToString().ToLower())">Last 24h</option>
+        <option value="7d" selected="@((selectedFilter == "7d").ToString().ToLower())">Last 7 days</option>
+        <option value="30d" selected="@((selectedFilter == "30d").ToString().ToLower())">Last 30 days</option>
+    </select>
+</form>
+
+<h4 class="mt-4">Air Quality Data</h4>
+
+@if (Model.AQIDataRecords != null && Model.AQIDataRecords.Any())
+{
+    <table class="table table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>Timestamp</th>
+                <th>PM2.5</th>
+                <th>PM10</th>
+                <th>CO₂ (ppm)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var reading in Model.AQIDataRecords.OrderByDescending(r => r.Timestamp))
+            {
+                string pm25Class = reading.PM25 switch
+                {
+                    <= 12 => "table-success",
+                    <= 35 => "table-warning",
+                    <= 55 => "table-danger",
+                    _ => "table-dark"
+                };
+
+                string pm10Class = reading.PM10 switch
+                {
+                    <= 54 => "table-success",
+                    <= 154 => "table-warning",
+                    <= 254 => "table-danger",
+                    _ => "table-dark"
+                };
+
+                string co2Class = reading.CO2 switch
+                {
+                    <= 800 => "table-success",
+                    <= 1000 => "table-warning",
+                    <= 2000 => "table-danger",
+                    _ => "table-dark"
+                };
+
+                <tr>
+                    <td>@reading.Timestamp.ToString("g")</td>
+                    <td class="@pm25Class">@reading.PM25</td>
+                    <td class="@pm10Class">@reading.PM10</td>
+                    <td class="@co2Class">@reading.CO2</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="mt-3">
+        <h6>Legend:</h6>
+        <ul class="list-unstyled">
+            <li><span class="badge bg-success">&nbsp;&nbsp;</span> Good</li>
+            <li><span class="badge bg-warning">&nbsp;&nbsp;</span> Moderate</li>
+            <li><span class="badge bg-danger">&nbsp;&nbsp;</span> Unhealthy</li>
+            <li><span class="badge bg-dark">&nbsp;&nbsp;</span> Very Unhealthy</li>
+        </ul>
+    </div>
+}
+else
+{
+    <p class="text-muted">No AQI data available for this sensor.</p>
+}
+
+<h4 class="mt-5">Historical AQI Trends</h4>
+<canvas id="aqiChart" width="100%" height="40"></canvas>
+
 @section Scripts {
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         const lat = parseFloat('@Model.Latitude');
         const lng = parseFloat('@Model.Longitude');
 
         const map = L.map('map').setView([lat, lng], 13);
-
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
+        L.marker([lat, lng]).addTo(map).bindPopup('@Model.SensorName').openPopup();
+    </script>
 
-        L.marker([lat, lng]).addTo(map)
-            .bindPopup('📍 @Model.SensorName')
-            .openPopup();
+    <script>
+        const timestamps = @Html.Raw(Json.Serialize(Model.AQIDataRecords.OrderBy(r => r.Timestamp).Select(r => r.Timestamp.ToString("yyyy-MM-dd HH:mm"))));
+        const pm25Data = @Html.Raw(Json.Serialize(Model.AQIDataRecords.OrderBy(r => r.Timestamp).Select(r => r.PM25)));
+        const pm10Data = @Html.Raw(Json.Serialize(Model.AQIDataRecords.OrderBy(r => r.Timestamp).Select(r => r.PM10)));
+        const co2Data = @Html.Raw(Json.Serialize(Model.AQIDataRecords.OrderBy(r => r.Timestamp).Select(r => r.CO2)));
+
+        const ctx = document.getElementById('aqiChart').getContext('2d');
+        const aqiChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: timestamps,
+                datasets: [
+                    {
+                        label: 'PM2.5',
+                        data: pm25Data,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        fill: false
+                    },
+                    {
+                        label: 'PM10',
+                        data: pm10Data,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        fill: false
+                    },
+                    {
+                        label: 'CO2 (ppm)',
+                        data: co2Data,
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                stacked: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Air Quality Over Time'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Timestamp'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Value'
+                        }
+                    }
+                }
+            }
+        });
     </script>
 }

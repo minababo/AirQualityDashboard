@@ -1,0 +1,22 @@
+﻿@model IEnumerable<AQIData>
+<br />
+<h5>Air Quality Data</h5>
+<table class="table table-bordered table-striped mt-3">
+    <thead>
+        <tr>
+            <th>Timestamp</th>
+            <th>PM2.5</th>
+            <th>PM10</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var reading in Model)
+        {
+            <tr>
+                <td>@reading.Timestamp.ToString("g")</td>
+                <td>@reading.PM25</td>
+                <td>@reading.PM10</td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -2,72 +2,63 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace AirQualityDashboard.Controllers
 {
-    [Authorize]
-    public class SensorController : Controller
+    public class AQIDataController : Controller
     {
         private readonly ApplicationDbContext _context;
 
-        public SensorController(ApplicationDbContext context)
+        public AQIDataController(ApplicationDbContext context)
         {
             _context = context;
         }
 
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Sensors.ToListAsync());
+            var applicationDbContext = _context.AQIData.Include(a => a.Sensor);
+            return View(await applicationDbContext.ToListAsync());
         }
 
-        public async Task<IActionResult> Details(int id, string filter = "24h")
+        public async Task<IActionResult> Details(int? id)
         {
-            var sensor = await _context.Sensors
-                .Include(s => s.AQIDataRecords)
-                .FirstOrDefaultAsync(m => m.SensorId == id);
-
-            if (sensor == null)
+            if (id == null)
             {
                 return NotFound();
             }
 
-            DateTime cutoff = filter switch
+            var aQIData = await _context.AQIData
+                .Include(a => a.Sensor)
+                .FirstOrDefaultAsync(m => m.AQIDataId == id);
+            if (aQIData == null)
             {
-                "7d" => DateTime.Now.AddDays(-7),
-                "30d" => DateTime.Now.AddDays(-30),
-                _ => DateTime.Now.AddHours(-24),
-            };
+                return NotFound();
+            }
 
-            sensor.AQIDataRecords = sensor.AQIDataRecords
-                .Where(r => r.Timestamp >= cutoff)
-                .OrderBy(r => r.Timestamp)
-                .ToList();
-
-            ViewData["Filter"] = filter;
-            return View(sensor);
+            return View(aQIData);
         }
-
 
         public IActionResult Create()
         {
+            ViewData["SensorId"] = new SelectList(_context.Sensors, "SensorId", "LocationName");
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("SensorId,SensorName,LocationName,Latitude,Longitude,IsActive")] Sensor sensor)
+        public async Task<IActionResult> Create([Bind("AQIDataId,SensorId,PM25,PM10,Timestamp")] AQIData aQIData)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(sensor);
+                _context.Add(aQIData);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(sensor);
+            ViewData["SensorId"] = new SelectList(_context.Sensors, "SensorId", "LocationName", aQIData.SensorId);
+            return View(aQIData);
         }
 
         public async Task<IActionResult> Edit(int? id)
@@ -77,19 +68,20 @@ namespace AirQualityDashboard.Controllers
                 return NotFound();
             }
 
-            var sensor = await _context.Sensors.FindAsync(id);
-            if (sensor == null)
+            var aQIData = await _context.AQIData.FindAsync(id);
+            if (aQIData == null)
             {
                 return NotFound();
             }
-            return View(sensor);
+            ViewData["SensorId"] = new SelectList(_context.Sensors, "SensorId", "LocationName", aQIData.SensorId);
+            return View(aQIData);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("SensorId,SensorName,LocationName,Latitude,Longitude,IsActive")] Sensor sensor)
+        public async Task<IActionResult> Edit(int id, [Bind("AQIDataId,SensorId,PM25,PM10,Timestamp")] AQIData aQIData)
         {
-            if (id != sensor.SensorId)
+            if (id != aQIData.AQIDataId)
             {
                 return NotFound();
             }
@@ -98,12 +90,12 @@ namespace AirQualityDashboard.Controllers
             {
                 try
                 {
-                    _context.Update(sensor);
+                    _context.Update(aQIData);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!SensorExists(sensor.SensorId))
+                    if (!AQIDataExists(aQIData.AQIDataId))
                     {
                         return NotFound();
                     }
@@ -114,7 +106,8 @@ namespace AirQualityDashboard.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(sensor);
+            ViewData["SensorId"] = new SelectList(_context.Sensors, "SensorId", "LocationName", aQIData.SensorId);
+            return View(aQIData);
         }
 
         public async Task<IActionResult> Delete(int? id)
@@ -124,35 +117,34 @@ namespace AirQualityDashboard.Controllers
                 return NotFound();
             }
 
-            var sensor = await _context.Sensors
-                .FirstOrDefaultAsync(m => m.SensorId == id);
-            if (sensor == null)
+            var aQIData = await _context.AQIData
+                .Include(a => a.Sensor)
+                .FirstOrDefaultAsync(m => m.AQIDataId == id);
+            if (aQIData == null)
             {
                 return NotFound();
             }
 
-            return View(sensor);
+            return View(aQIData);
         }
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var sensor = await _context.Sensors.FindAsync(id);
-            if (sensor != null)
+            var aQIData = await _context.AQIData.FindAsync(id);
+            if (aQIData != null)
             {
-                _context.Sensors.Remove(sensor);
+                _context.AQIData.Remove(aQIData);
             }
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool SensorExists(int id)
+        private bool AQIDataExists(int id)
         {
-            return _context.Sensors.Any(e => e.SensorId == id);
+            return _context.AQIData.Any(e => e.AQIDataId == id);
         }
-
-
     }
 }

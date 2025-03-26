@@ -48,9 +48,12 @@
             <td>
                 @Html.DisplayFor(modelItem => item.IsActive)
             </td>
-                <td>
-                    <a asp-action="Details" asp-route-id="@item.SensorId" class="btn btn-sm btn-outline-primary">View on Map</a>
-                </td>
+            <td>
+                <a asp-action="Details" asp-route-id="@item.SensorId" class="btn btn-sm btn-outline-primary">View on Map</a>
+            </td>
+            <td>
+                    @* <a asp-controller="AQIData" asp-action="Create" asp-route-sensorId="@item.SensorId">Add AQI Data</a>*@
+            </td>
             <td>
                 <a asp-action="Edit" asp-route-id="@item.SensorId">Edit</a> |
                 <a asp-action="Details" asp-route-id="@item.SensorId">Details</a> |

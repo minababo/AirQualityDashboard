@@ -6,14 +6,19 @@ public class AQIData
     [Key]
     public int AQIDataId { get; set; }
 
-    [Required]
     public int SensorId { get; set; }
 
     [ForeignKey("SensorId")]
-    public Sensor Sensor { get; set; } = null!;
+    public Sensor Sensor { get; set; }
 
     [Required]
-    public int AQI { get; set; }
+    public double PM25 { get; set; }
+
+    [Required]
+    public double PM10 { get; set; }
+
+    [Required]
+    public double CO2 { get; set; }
 
     [Required]
     public DateTime Timestamp { get; set; } = DateTime.Now;

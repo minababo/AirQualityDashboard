@@ -1,0 +1,46 @@
+﻿@model AQIData
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>AQIData</h4>
+    <hr />
+    <dl class="row">
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.Sensor)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Sensor.LocationName)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.PM25)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.PM25)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.PM10)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.PM10)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.Timestamp)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Timestamp)
+        </dd>
+    </dl>
+</div>
+<h5>📈 Air Quality Readings</h5>
+<div>
+    @await Html.PartialAsync("~/Views/AQIData/_AQIList.cshtml", Model.AQIDataId)
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model?.AQIDataId">Edit</a> |
+    <a asp-action="Index">Back to List</a>
+</div>
