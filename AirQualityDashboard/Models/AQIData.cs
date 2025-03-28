@@ -18,7 +18,13 @@ public class AQIData
     public double PM10 { get; set; }
 
     [Required]
-    public double CO2 { get; set; }
+    public double RH { get; set; }
+
+    [Required]
+    public double Temp { get; set; }
+
+    [Required]
+    public double Wind { get; set; }
 
     [Required]
     public DateTime Timestamp { get; set; } = DateTime.Now;

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AirQualityDashboard.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250328141102_ReplaceCO2WithOtherMetrics")]
+    partial class ReplaceCO2WithOtherMetrics
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -28,6 +31,9 @@ namespace AirQualityDashboard.Data.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AQIDataId"));
+
+                    b.Property<double>("PM1")
+                        .HasColumnType("float");
 
                     b.Property<double>("PM10")
                         .HasColumnType("float");
@@ -287,49 +293,6 @@ namespace AirQualityDashboard.Data.Migrations
                     b.HasKey("SensorId");
 
                     b.ToTable("Sensors");
-                });
-
-            modelBuilder.Entity("SimulationSettings", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<float>("PM10Max")
-                        .HasColumnType("real");
-
-                    b.Property<float>("PM10Min")
-                        .HasColumnType("real");
-
-                    b.Property<float>("PM25Max")
-                        .HasColumnType("real");
-
-                    b.Property<float>("PM25Min")
-                        .HasColumnType("real");
-
-                    b.Property<float>("RHMax")
-                        .HasColumnType("real");
-
-                    b.Property<float>("RHMin")
-                        .HasColumnType("real");
-
-                    b.Property<float>("TempMax")
-                        .HasColumnType("real");
-
-                    b.Property<float>("TempMin")
-                        .HasColumnType("real");
-
-                    b.Property<float>("WindMax")
-                        .HasColumnType("real");
-
-                    b.Property<float>("WindMin")
-                        .HasColumnType("real");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SimulationSettings");
                 });
 
             modelBuilder.Entity("AQIData", b =>

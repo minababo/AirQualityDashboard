@@ -2,42 +2,66 @@
     ViewData["Title"] = "Admin Dashboard";
 }
 
-<h1>Admin Dashboard</h1>
+<style>
+    .dashboard-wrapper {
+        min-height: calc(100vh - 120px); /* Adjust based on navbar/footer height */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+</style>
 
-<div class="row">
-    <div class="col-md-4">
-        <div class="card text-bg-light mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Sensor Management</h5><br />
-                <a href="/Admin/Sensors" class="btn btn-primary btn-sm">Manage Sensors</a>
-                <br /><br />
+<div class="dashboard-wrapper">
+    <h1 class="mb-4">Admin Dashboard</h1>
+
+    <div class="container">
+        <div class="row justify-content-center mb-4">
+            <div class="col-md-6 col-lg-5 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Sensor Management</h5>
+                        <p class="card-text">Manage sensors registered in the system.</p>
+                        <a href="/Admin/Sensors" class="btn btn-primary">Manage Sensors</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-5 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Simulation Control</h5>
+                        <p>Status: <strong>@ViewBag.SimulationStatus</strong></p>
+                        <form method="post" asp-action="StartSimulation" style="display:inline;">
+                            <button type="submit" class="btn btn-warning">Start</button>
+                        </form>
+                        <form method="post" asp-action="StopSimulation" style="display:inline;">
+                            <button type="submit" class="btn btn-danger">Stop</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="col-md-4">
-        <div class="card text-bg-light mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Simulation Control</h5>
-                <p>Status: <strong>@ViewBag.SimulationStatus</strong></p>
-
-                <form method="post" asp-action="StartSimulation" style="display: inline;">
-                    <button type="submit" class="btn btn-warning btn-sm">Start</button>
-                </form>
-
-                <form method="post" asp-action="StopSimulation" style="display: inline;">
-                    <button type="submit" class="btn btn-danger btn-sm">Stop</button>
-                </form>
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">System Status</h5>
+                        <p>Total Sensors: <strong>@ViewBag.TotalSensors</strong></p>
+                        <p>Total Active Sensors: <strong>@ViewBag.ActiveSensors</strong></p>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <div class="col-md-4">
-        <div class="card text-bg-light mb-3">
-            <div class="card-body">
-                <h5 class="card-title">System Status</h5>
-                <p>Total Sensors: <strong>@ViewBag.TotalSensors</strong></p>
-                <p>Total Active Sensors: <strong>@ViewBag.ActiveSensors</strong></p>
+            <div class="col-md-6 col-lg-5 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Configure Simulation</h5>
+                        <p>Adjust ranges for PM2.5, PM10, RH, Temp, and Wind.</p>
+                        <a href="/Admin/ConfigureSimulation" class="btn btn-info">Edit Parameters</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

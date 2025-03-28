@@ -1,0 +1,53 @@
+﻿@model SimulationSettings
+
+<h2 class="mb-4">Configure Data Simulation Parameters</h2>
+
+<form asp-action="ConfigureSimulation" method="post">
+    <div class="card shadow-sm p-4">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <label class="form-label">PM2.5 Range</label>
+                <div class="input-group">
+                    <input asp-for="PM25Min" class="form-control" placeholder="Min" />
+                    <input asp-for="PM25Max" class="form-control" placeholder="Max" />
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">PM10 Range</label>
+                <div class="input-group">
+                    <input asp-for="PM10Min" class="form-control" placeholder="Min" />
+                    <input asp-for="PM10Max" class="form-control" placeholder="Max" />
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">R.H. (%) Range</label>
+                <div class="input-group">
+                    <input asp-for="RHMin" class="form-control" placeholder="Min" />
+                    <input asp-for="RHMax" class="form-control" placeholder="Max" />
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Temperature (°C) Range</label>
+                <div class="input-group">
+                    <input asp-for="TempMin" class="form-control" placeholder="Min" />
+                    <input asp-for="TempMax" class="form-control" placeholder="Max" />
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Wind Speed (m/s) Range</label>
+                <div class="input-group">
+                    <input asp-for="WindMin" class="form-control" placeholder="Min" />
+                    <input asp-for="WindMax" class="form-control" placeholder="Max" />
+                </div>
+            </div>
+        </div>
+
+        <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+    </div>
+</form>

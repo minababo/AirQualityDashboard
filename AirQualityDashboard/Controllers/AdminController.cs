@@ -153,7 +153,9 @@ public class AdminController : Controller
                 Timestamp = g.Key,
                 PM25 = g.Average(x => x.PM25),
                 PM10 = g.Average(x => x.PM10),
-                CO2 = g.Average(x => x.CO2)
+                RH = g.Average(x => x.RH),
+                Temp = g.Average(x => x.Temp),
+                Wind = g.Average(x => x.Wind)
             })
             .OrderBy(x => x.Timestamp)
             .ToList();
@@ -177,6 +179,7 @@ public class AdminController : Controller
         return View("Sensors/Details", viewModel);
     }
 
+
     private bool SensorExists(int id)
     {
         return _context.Sensors.Any(e => e.SensorId == id);
@@ -195,4 +198,27 @@ public class AdminController : Controller
         _generatorService.Pause();
         return RedirectToAction(nameof(Dashboard));
     }
+
+    public async Task<IActionResult> ConfigureSimulation()
+    {
+        var settings = await _context.SimulationSettings.FirstOrDefaultAsync() ?? new SimulationSettings();
+        return View(settings);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConfigureSimulation(SimulationSettings model)
+    {
+        var existing = await _context.SimulationSettings.FirstOrDefaultAsync();
+        if (existing == null)
+            _context.SimulationSettings.Add(model);
+        else
+        {
+            _context.Entry(existing).CurrentValues.SetValues(model);
+        }
+
+        await _context.SaveChangesAsync();
+        return RedirectToAction("Dashboard");
+    }
+
 }

@@ -53,14 +53,14 @@
 </div>
 
 <div>
-    <a asp-action="Index">Back to List</a>
+    <a href="/Admin/Sensors">Back to List</a>
 </div>
 
 @section Scripts {
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 
     <script>
-        console.log("✅ Initializing Leaflet...");
+        console.log("Initializing Leaflet...");
         document.addEventListener("DOMContentLoaded", function () {
             const map = L.map('map').setView([6.9271, 79.8612], 11);
 
@@ -83,7 +83,7 @@
                     marker = L.marker(e.latlng).addTo(map);
                 }
 
-                console.log(`📍 Marker placed at: ${lat}, ${lng}`);
+                console.log(`Marker placed at: ${lat}, ${lng}`);
             });
         });
     </script>

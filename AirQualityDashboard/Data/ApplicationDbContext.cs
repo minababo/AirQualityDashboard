@@ -8,4 +8,5 @@ public class ApplicationDbContext : IdentityDbContext
 
     public DbSet<Sensor> Sensors { get; set; }
     public DbSet<AQIData> AQIData { get; set; }
+    public DbSet<SimulationSettings> SimulationSettings { get; set; }
 }

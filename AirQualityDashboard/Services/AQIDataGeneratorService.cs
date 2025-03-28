@@ -41,14 +41,24 @@ public class AQIDataGeneratorService : BackgroundService
 
                 foreach (var sensor in sensors)
                 {
+                    var settings = await dbContext.SimulationSettings.FirstOrDefaultAsync();
+
+                    float RandomOrDefault(float min, float max, float defaultMin, float defaultMax)
+                    {
+                        return (settings != null) ? RandomFloat(min, max) : RandomFloat(defaultMin, defaultMax);
+                    }
+
                     var aqiData = new AQIData
                     {
                         SensorId = sensor.SensorId,
                         Timestamp = DateTime.Now,
-                        PM25 = RandomFloat(10, 110),
-                        PM10 = RandomFloat(10, 260),
-                        CO2 = RandomFloat(400, 1000)
+                        PM25 = RandomOrDefault(settings?.PM25Min ?? 10, settings?.PM25Max ?? 110, 10, 110),
+                        PM10 = RandomOrDefault(settings?.PM10Min ?? 10, settings?.PM10Max ?? 260, 10, 260),
+                        RH = RandomOrDefault(settings?.RHMin ?? 50, settings?.RHMax ?? 100, 50, 100),
+                        Temp = RandomOrDefault(settings?.TempMin ?? 25, settings?.TempMax ?? 35, 25, 35),
+                        Wind = RandomOrDefault(settings?.WindMin ?? 0, settings?.WindMax ?? 5, 0, 5)
                     };
+
 
                     dbContext.AQIData.Add(aqiData);
                 }

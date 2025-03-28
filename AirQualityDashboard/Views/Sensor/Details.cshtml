@@ -73,7 +73,9 @@
                 <th>Timestamp</th>
                 <th>PM2.5</th>
                 <th>PM10</th>
-                <th>CO₂ (ppm)</th>
+                <th>R.H. (%)</th>
+                <th>Temp (°C)</th>
+                <th>Wind (m/s)</th>
             </tr>
         </thead>
         <tbody>
@@ -95,11 +97,27 @@
                     _ => "table-dark"
                 };
 
-                string co2Class = reading.CO2 switch
+                string rhClass = reading.RH switch
                 {
-                    <= 800 => "table-success",
-                    <= 1000 => "table-warning",
-                    <= 2000 => "table-danger",
+                    <= 60 => "table-warning",
+                    <= 85 => "table-success",
+                    <= 100 => "table-danger",
+                    _ => "table-dark"
+                };
+
+                string tempClass = reading.Temp switch
+                {
+                    <= 27 => "table-warning",
+                    <= 32 => "table-success",
+                    <= 35 => "table-danger",
+                    _ => "table-dark"
+                };
+
+                string windClass = reading.Wind switch
+                {
+                    <= 1 => "table-warning",
+                    <= 3 => "table-success",
+                    <= 5 => "table-danger",
                     _ => "table-dark"
                 };
 
@@ -107,7 +125,9 @@
                     <td>@reading.Timestamp.ToString("g")</td>
                     <td class="@pm25Class">@reading.PM25</td>
                     <td class="@pm10Class">@reading.PM10</td>
-                    <td class="@co2Class">@reading.CO2</td>
+                    <td class="@rhClass">@reading.RH</td>
+    <td class="@tempClass">@reading.Temp</td>
+    <td class="@windClass">@reading.Wind</td>
                 </tr>
             }
         </tbody>
@@ -222,36 +242,50 @@ else
         const labels = @Html.Raw(Json.Serialize(Model.HourlyAverages.Select(r => r.Timestamp.ToString("yyyy-MM-dd HH:mm"))));
         const pm25Data = @Html.Raw(Json.Serialize(Model.HourlyAverages.Select(r => r.PM25)));
         const pm10Data = @Html.Raw(Json.Serialize(Model.HourlyAverages.Select(r => r.PM10)));
-        const co2Data = @Html.Raw(Json.Serialize(Model.HourlyAverages.Select(r => r.CO2)));
 
         const ctx = document.getElementById('aqiChart').getContext('2d');
         const aqiChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [
-                    {
-                        label: 'PM2.5',
-                        data: pm25Data,
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        fill: false
-                    },
-                    {
-                        label: 'PM10',
-                        data: pm10Data,
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        fill: false
-                    },
-                    {
-                        label: 'CO₂ (ppm)',
-                        data: co2Data,
-                        borderColor: 'rgba(255, 206, 86, 1)',
-                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
-                        fill: false
-                    }
-                ]
+                        datasets: [
+            {
+                label: 'PM2.5',
+                data: pm25Data,
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                fill: false
+            },
+            {
+                label: 'PM10',
+                data: pm10Data,
+                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                fill: false
+            },
+            {
+                label: 'R.H. (%)',
+                data: @Html.Raw(Json.Serialize(Model.HourlyAverages.Select(r => r.RH))),
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                fill: false
+            },
+            {
+                label: 'Temp (°C)',
+                data: @Html.Raw(Json.Serialize(Model.HourlyAverages.Select(r => r.Temp))),
+                borderColor: 'rgba(153, 102, 255, 1)',
+                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                fill: false
+            },
+            {
+                label: 'Wind (m/s)',
+                data: @Html.Raw(Json.Serialize(Model.HourlyAverages.Select(r => r.Wind))),
+                borderColor: 'rgba(255, 159, 64, 1)',
+                backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                fill: false
+            }
+        ]
+
             },
             options: {
                 responsive: true,

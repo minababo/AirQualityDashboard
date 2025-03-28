@@ -20,7 +20,7 @@ namespace AirQualityDashboard.Controllers
         {
             _context = context;
         }
-
+        [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
             return View(await _context.Sensors.ToListAsync());
@@ -67,7 +67,9 @@ namespace AirQualityDashboard.Controllers
                     Timestamp = g.Key,
                     PM25 = g.Average(x => x.PM25),
                     PM10 = g.Average(x => x.PM10),
-                    CO2 = g.Average(x => x.CO2)
+                    RH = g.Average(x => x.RH),
+                    Temp = g.Average(x => x.Temp),
+                    Wind = g.Average(x => x.Wind)
                 })
                 .OrderBy(x => x.Timestamp)
                 .ToList();
