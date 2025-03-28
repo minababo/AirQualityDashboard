@@ -1,4 +1,4 @@
-﻿@model IEnumerable<Sensor>
+﻿@model IEnumerable<AirQualityDashboard.Models.ViewModels.SensorMapViewModel>
 @using System.Text.Json
 
 @{
@@ -11,26 +11,182 @@
 
 <div id="map" style="height: 600px; border: 1px solid #ccc;"></div>
 
+<div class="mt-4">
+    <h5>AQI Legend</h5>
+    <ul class="list-inline">
+        <li class="list-inline-item"><span class="badge" style="background-color:#009966">&nbsp;&nbsp;</span> Good</li>
+        <li class="list-inline-item"><span class="badge" style="background-color:#ffc107">&nbsp;&nbsp;</span> Moderate</li>
+        <li class="list-inline-item"><span class="badge" style="background-color:#DC3545">&nbsp;&nbsp;</span> Unhealthy</li>
+        <li class="list-inline-item"><span class="badge" style="background-color:#212529">&nbsp;&nbsp;</span> Hazardous</li>
+    </ul>
+</div>
+
 @section Scripts {
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .custom-marker {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            line-height: 30px;
+            font-size: 14px;
+            border: 2px solid #fff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.4);
+        }
+
+        .popup-chart {
+            width: 230px;
+            height: 100px;
+        }
+
+        .popup-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .toggle-btn {
+            padding: 2px 6px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+    </style>
 
     <script>
         const map = L.map('map').setView([6.9271, 79.8612], 11);
-
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
         const sensors = @Html.Raw(JsonSerializer.Serialize(Model, jsonOptions));
 
+        function getAQIColor(aqi) {
+            if (aqi <= 50) return '#009966';
+            if (aqi <= 100) return '#ffc107';
+            if (aqi <= 150) return '#DC3545';
+            return '#212529';
+        }
+
         sensors.forEach(sensor => {
-            const marker = L.marker([sensor.latitude, sensor.longitude]).addTo(map);
-            marker.bindPopup(`
+            if (!sensor.latestPM25 || !sensor.trendTimestamps || !sensor.trendPM25 || !sensor.trendPM10 || sensor.trendTimestamps.length === 0) return;
+
+            const aqi = Math.round(sensor.latestPM25);
+            const color = getAQIColor(aqi);
+            const markerHtml = `<div class="custom-marker" style="background-color:${color};">${aqi}</div>`;
+            const icon = L.divIcon({ html: markerHtml, className: '', iconSize: [30, 30] });
+
+            const chartId = `chart-${sensor.sensorId}`;
+            const labelId = `label-${sensor.sensorId}`;
+            const buttonId = `btn-${sensor.sensorId}`;
+            const marker = L.marker([sensor.latitude, sensor.longitude], { icon: icon }).addTo(map);
+
+            const popupHtml = `
                 <strong>${sensor.sensorName}</strong><br/>
                 ${sensor.locationName}<br/>
+                AQI: ${aqi}<br/>
+                <div class="popup-controls">
+                    <div id="${labelId}">PM2.5</div>
+                    <button id="${buttonId}" class="btn btn-sm btn-outline-secondary toggle-btn">Change</button>
+                </div>
+                <canvas id="${chartId}" class="popup-chart"></canvas>
                 <a href="/Sensor/Details/${sensor.sensorId}">See more info</a>
-            `);
+            `;
+            marker.bindPopup(popupHtml);
+
+            marker.on('popupopen', () => {
+                const canvas = document.getElementById(chartId);
+                if (!canvas) return;
+
+                const ctx = canvas.getContext('2d');
+                const labels = sensor.trendTimestamps.map(t => {
+                    const date = new Date(t);
+                    return `${String(date.getHours()).padStart(2, '0')}:00`;
+                });
+
+                const pm25Data = sensor.trendPM25.map(v => Math.round(v));
+                const pm10Data = sensor.trendPM10.map(v => Math.round(v));
+
+                function getColorForValue(val) {
+                    if (val <= 50) return '#009966';
+                    if (val <= 100) return '#ffc107';
+                    if (val <= 150) return '#DC3545';
+                    return '#212529';
+                }
+
+                const labelEl = document.getElementById(labelId);
+                const buttonEl = document.getElementById(buttonId);
+
+                let showingPM25 = true;
+                let values = pm25Data;
+                let colors = values.map(getColorForValue);
+
+                const chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'PM2.5',
+                            data: values,
+                            backgroundColor: colors,
+                            borderColor: colors,
+                            borderWidth: 1,
+                            barThickness: 10
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => `${ctx.dataset.label}: ${ctx.raw}`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                display: false
+                            },
+                            x: { display: false }
+                        }
+                    }
+                });
+
+                const updateChart = () => {
+                    showingPM25 = !showingPM25;
+                    values = showingPM25 ? pm25Data : pm10Data;
+                    colors = values.map(getColorForValue);
+                    chart.data.datasets[0].data = values;
+                    chart.data.datasets[0].backgroundColor = colors;
+                    chart.data.datasets[0].borderColor = colors;
+                    chart.data.datasets[0].label = showingPM25 ? 'PM2.5' : 'PM10';
+                    chart.update();
+                    if (labelEl) labelEl.innerText = showingPM25 ? 'PM2.5' : 'PM10';
+                };
+
+                const intervalId = setInterval(() => {
+                    if (!canvas.closest('.leaflet-popup')) {
+                        clearInterval(intervalId);
+                        return;
+                    }
+                    updateChart();
+                }, 30000);
+
+                if (buttonEl) {
+                    buttonEl.addEventListener('click', () => {
+                        updateChart();
+                    });
+                }
+            });
         });
     </script>
 }

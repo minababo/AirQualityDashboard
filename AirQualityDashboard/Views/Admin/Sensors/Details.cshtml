@@ -1,48 +1,295 @@
-﻿@model Sensor
+﻿@using System.Text.Json
+@model SensorDetailsViewModel
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Sensor Details";
+    var selectedFilter = Model.Filter ?? "24h";
+
+    var latestReading = Model.LatestReading;
+    string aqiLevel = "Unknown";
+    string aqiBadge = "bg-secondary";
+    string aqiColor = "#6c757d";
+    if (latestReading != null)
+    {
+        double aqi = latestReading.PM25;
+        if (aqi <= 50)
+        {
+            aqiLevel = "Good";
+            aqiBadge = "bg-success";
+            aqiColor = "#009966";
+        }
+        else if (aqi <= 100)
+        {
+            aqiLevel = "Moderate";
+            aqiBadge = "bg-warning";
+            aqiColor = "#ffc107";
+        }
+        else if (aqi <= 150)
+        {
+            aqiLevel = "Unhealthy";
+            aqiBadge = "bg-danger";
+            aqiColor = "#DC3545";
+        }
+        else
+        {
+            aqiLevel = "Hazardous";
+            aqiBadge = "bg-dark";
+            aqiColor = "#212529";
+        }
+    }
 }
 
-<h1>Details</h1>
+<h1>Sensor Details</h1>
+<hr />
 
 <div>
-    <h4>Sensor</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SensorName)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SensorName)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.LocationName)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.LocationName)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Latitude)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Latitude)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Longitude)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Longitude)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.IsActive)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.IsActive)
-        </dd>
-    </dl>
+    <h4>@Model.Sensor.SensorName</h4>
+    <p><strong>Location:</strong> @Model.Sensor.LocationName</p>
+    <p><strong>Coordinates:</strong> @Model.Sensor.Latitude, @Model.Sensor.Longitude</p>
+    @if (latestReading != null)
+    {
+        <p><strong>Current AQI (PM2.5):</strong> <span class="badge @aqiBadge">@latestReading.PM25.ToString("0") - @aqiLevel</span></p>
+    }
 </div>
+
+<div id="map" style="height: 500px; border: 1px solid #ccc; margin-bottom: 20px;"></div>
+
 <div>
-    <a asp-action="Edit" asp-route-id="@Model?.SensorId">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+    <a asp-action="Edit" asp-route-id="@Model.Sensor.SensorId" class="btn btn-warning">Edit</a>
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
 </div>
+
+<form method="get" asp-action="Details" asp-route-id="@Model.Sensor.SensorId" class="mb-3 mt-4">
+    <label for="filter">Show data from:</label>
+    <select name="filter" id="filter" onchange="this.form.submit()" class="form-select w-auto d-inline mx-2">
+        <option value="24h" selected="@((selectedFilter == "24h").ToString().ToLower())">Last 24h</option>
+        <option value="7d" selected="@((selectedFilter == "7d").ToString().ToLower())">Last 7 days</option>
+        <option value="30d" selected="@((selectedFilter == "30d").ToString().ToLower())">Last 30 days</option>
+    </select>
+</form>
+
+<h4 class="mt-4">Air Quality Data</h4>
+
+@if (Model.PagedAQIData != null && Model.PagedAQIData.Any())
+{
+    <table class="table table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>Timestamp</th>
+                <th>PM2.5</th>
+                <th>PM10</th>
+                <th>CO₂ (ppm)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var reading in Model.PagedAQIData)
+            {
+                string pm25Class = reading.PM25 switch
+                {
+                    <= 50 => "table-success",
+                    <= 100 => "table-warning",
+                    <= 150 => "table-danger",
+                    _ => "table-dark"
+                };
+
+                string pm10Class = reading.PM10 switch
+                {
+                    <= 54 => "table-success",
+                    <= 154 => "table-warning",
+                    <= 254 => "table-danger",
+                    _ => "table-dark"
+                };
+
+                string co2Class = reading.CO2 switch
+                {
+                    <= 800 => "table-success",
+                    <= 1000 => "table-warning",
+                    <= 2000 => "table-danger",
+                    _ => "table-dark"
+                };
+
+                <tr>
+                    <td>@reading.Timestamp.ToString("g")</td>
+                    <td class="@pm25Class">@reading.PM25</td>
+                    <td class="@pm10Class">@reading.PM10</td>
+                    <td class="@co2Class">@reading.CO2</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center mt-3">
+            @if (Model.TotalPages > 10)
+            {
+                int start = ((Model.CurrentPage - 1) / 10) * 10 + 1;
+                int end = Math.Min(start + 9, Model.TotalPages);
+
+                if (start > 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("Details", new { id = Model.Sensor.SensorId, filter = Model.Filter, page = start - 1 })">&laquo;</a>
+                    </li>
+                }
+
+                for (int i = start; i <= end; i++)
+                {
+                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                        <a class="page-link" href="@Url.Action("Details", new { id = Model.Sensor.SensorId, filter = Model.Filter, page = i })">@i</a>
+                    </li>
+                }
+
+                if (end < Model.TotalPages)
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("Details", new { id = Model.Sensor.SensorId, filter = Model.Filter, page = end + 1 })">&raquo;</a>
+                    </li>
+                }
+            }
+            else
+            {
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                        <a class="page-link" href="@Url.Action("Details", new { id = Model.Sensor.SensorId, filter = Model.Filter, page = i })">@i</a>
+                    </li>
+                }
+            }
+        </ul>
+    </nav>
+
+    <div class="mt-3">
+        <h6>Legend:</h6>
+        <ul class="list-unstyled">
+            <li><span class="badge bg-success">&nbsp;&nbsp;</span> Good</li>
+            <li><span class="badge bg-warning">&nbsp;&nbsp;</span> Moderate</li>
+            <li><span class="badge bg-danger">&nbsp;&nbsp;</span> Unhealthy</li>
+            <li><span class="badge bg-dark">&nbsp;&nbsp;</span> Very Unhealthy</li>
+        </ul>
+    </div>
+}
+else
+{
+    <p class="text-muted">No AQI data available for this sensor.</p>
+}
+
+<h4 class="mt-5">Historical AQI Trends</h4>
+<canvas id="aqiChart" width="100%" height="40"></canvas>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .custom-marker {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            line-height: 30px;
+            font-size: 14px;
+            border: 2px solid #fff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.4);
+        }
+    </style>
+
+    <script>
+        const lat = parseFloat('@Model.Sensor.Latitude');
+        const lng = parseFloat('@Model.Sensor.Longitude');
+        const latestPM25 = @latestReading?.PM25 ?? 0;
+        const aqiValue = Math.round(latestPM25);
+        const aqiColor = '@aqiColor';
+
+        const iconHtml = `<div class="custom-marker" style="background-color:${aqiColor}">${aqiValue}</div>`;
+
+        const customIcon = L.divIcon({
+            html: iconHtml,
+            className: '',
+            iconSize: [30, 30]
+        });
+
+        const map = L.map('map').setView([lat, lng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        L.marker([lat, lng], { icon: customIcon })
+            .addTo(map)
+            .bindPopup(`<strong>@Model.Sensor.SensorName</strong><br/>Current AQI: ${aqiValue} - @aqiLevel`)
+            .openPopup();
+    </script>
+
+
+    <script>
+        const labels = @Html.Raw(Json.Serialize(Model.HourlyAverages.Select(r => r.Timestamp.ToString("yyyy-MM-dd HH:mm"))));
+        const pm25Data = @Html.Raw(Json.Serialize(Model.HourlyAverages.Select(r => r.PM25)));
+        const pm10Data = @Html.Raw(Json.Serialize(Model.HourlyAverages.Select(r => r.PM10)));
+        const co2Data = @Html.Raw(Json.Serialize(Model.HourlyAverages.Select(r => r.CO2)));
+
+        const ctx = document.getElementById('aqiChart').getContext('2d');
+        const aqiChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'PM2.5',
+                        data: pm25Data,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        fill: false
+                    },
+                    {
+                        label: 'PM10',
+                        data: pm10Data,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        fill: false
+                    },
+                    {
+                        label: 'CO₂ (ppm)',
+                        data: co2Data,
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                stacked: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Air Quality Over Time'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Timestamp'
+                        },
+                        ticks: {
+                            maxRotation: 90,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Value'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+}

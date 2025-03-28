@@ -4,7 +4,7 @@
     ViewData["Title"] = "Index";
 }
 
-<h1>Index</h1>
+<h1>Sensor List</h1>
 
 <p>
     <a asp-action="Create">Create New</a>
@@ -27,33 +27,39 @@
             <th>
                 @Html.DisplayNameFor(model => model.IsActive)
             </th>
-            <th></th>
+            <th></th><th></th><th></th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.SensorName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.LocationName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Latitude)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Longitude)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsActive)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.SensorId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.SensorId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.SensorId">Delete</a>
-            </td>
-        </tr>
-}
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.SensorName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.LocationName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Latitude)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Longitude)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.IsActive)
+                </td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@item.SensorId" class="btn btn-sm btn-outline-primary">View Details</a>
+                </td>
+                <td>
+                    @* <a asp-controller="AQIData" asp-action="Create" asp-route-sensorId="@item.SensorId">Add AQI Data</a>*@
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.SensorId">Edit</a> |
+                    <a asp-action="Delete" asp-route-id="@item.SensorId" style="color:red">Delete</a>
+                </td>
+            </tr>
+        }
     </tbody>
 </table>

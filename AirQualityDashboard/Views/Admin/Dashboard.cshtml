@@ -2,13 +2,43 @@
     ViewData["Title"] = "Admin Dashboard";
 }
 
-<h1>Monitoring Admin Dashboard</h1>
+<h1>Admin Dashboard</h1>
 
-<div>
-    <p><strong>Total Sensors:</strong> @ViewBag.TotalSensors</p>
-    <p><strong>Active Sensors:</strong> @ViewBag.ActiveSensors</p>
-</div>
+<div class="row">
+    <div class="col-md-4">
+        <div class="card text-bg-light mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Sensor Management</h5><br />
+                <a href="/Admin/Sensors" class="btn btn-primary btn-sm">Manage Sensors</a>
+                <br /><br />
+            </div>
+        </div>
+    </div>
 
-<div>
-    <a href="@Url.Action("Index", "Sensor")" class="btn btn-primary">Manage Sensors</a>
+    <div class="col-md-4">
+        <div class="card text-bg-light mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Simulation Control</h5>
+                <p>Status: <strong>@ViewBag.SimulationStatus</strong></p>
+
+                <form method="post" asp-action="StartSimulation" style="display: inline;">
+                    <button type="submit" class="btn btn-warning btn-sm">Start</button>
+                </form>
+
+                <form method="post" asp-action="StopSimulation" style="display: inline;">
+                    <button type="submit" class="btn btn-danger btn-sm">Stop</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card text-bg-light mb-3">
+            <div class="card-body">
+                <h5 class="card-title">System Status</h5>
+                <p>Total Sensors: <strong>@ViewBag.TotalSensors</strong></p>
+                <p>Total Active Sensors: <strong>@ViewBag.ActiveSensors</strong></p>
+            </div>
+        </div>
+    </div>
 </div>
