@@ -56,12 +56,24 @@
 
 <form method="get" asp-action="Details" asp-route-id="@Model.Sensor.SensorId" class="mb-3 mt-4">
     <label for="filter">Show data from:</label>
-    <select name="filter" id="filter" onchange="this.form.submit()" class="form-select w-auto d-inline mx-2">
-        <option value="24h" selected="@((selectedFilter == "24h").ToString().ToLower())">Last 24h</option>
-        <option value="7d" selected="@((selectedFilter == "7d").ToString().ToLower())">Last 7 days</option>
-        <option value="30d" selected="@((selectedFilter == "30d").ToString().ToLower())">Last 30 days</option>
+    <select name="filter" id="filter" class="form-select w-auto d-inline mx-2" onchange="this.form.submit()">
+        @{
+            var filters = new List<(string Value, string Label)>
+            {
+                ("24h", "Last 24h"),
+                ("7d", "Last 7 days"),
+                ("30d", "Last 30 days"),
+                ("all", "All")
+            };
+
+            foreach (var (value, label) in filters)
+            {
+                <option value="@value" selected="@(value == Model.Filter ? "selected" : null)">@label</option>
+            }
+        }
     </select>
 </form>
+
 
 <h4 class="mt-4">Air Quality Data</h4>
 

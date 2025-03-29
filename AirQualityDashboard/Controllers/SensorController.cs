@@ -41,8 +41,10 @@ namespace AirQualityDashboard.Controllers
             {
                 "7d" => DateTime.Now.AddDays(-7),
                 "30d" => DateTime.Now.AddDays(-30),
+                "all" => DateTime.MinValue,
                 _ => DateTime.Now.AddHours(-24)
             };
+
 
             var filteredRecords = sensor.AQIDataRecords
                 .Where(r => r.Timestamp >= fromDate)
@@ -59,7 +61,7 @@ namespace AirQualityDashboard.Controllers
 
             var now = DateTime.UtcNow;
             var hourlyAverages = _context.AQIData
-                .Where(r => r.SensorId == id && r.Timestamp >= now.AddHours(-48))
+                .Where(r => r.SensorId == id && r.Timestamp >= fromDate)
                 .AsEnumerable()
                 .GroupBy(r => new DateTime(r.Timestamp.Year, r.Timestamp.Month, r.Timestamp.Day, r.Timestamp.Hour, 0, 0))
                 .Select(g => new HourlyAverage
@@ -73,6 +75,7 @@ namespace AirQualityDashboard.Controllers
                 })
                 .OrderBy(x => x.Timestamp)
                 .ToList();
+
 
             var latestReading = sensor.AQIDataRecords
                 .OrderByDescending(r => r.Timestamp)
