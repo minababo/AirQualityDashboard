@@ -114,10 +114,17 @@
                 const pm25Data = sensor.trendPM25.map(v => Math.round(v));
                 const pm10Data = sensor.trendPM10.map(v => Math.round(v));
 
-                function getColorForValue(val) {
+                function getColorForPM25(val) {
                     if (val <= 50) return '#009966';
                     if (val <= 100) return '#ffc107';
                     if (val <= 150) return '#DC3545';
+                    return '#212529';
+                }
+
+                function getColorForPM10(val) {
+                    if (val <= 54) return '#009966';
+                    if (val <= 154) return '#ffc107';
+                    if (val <= 254) return '#DC3545';
                     return '#212529';
                 }
 
@@ -126,7 +133,7 @@
 
                 let showingPM25 = true;
                 let values = pm25Data;
-                let colors = values.map(getColorForValue);
+                let colors = values.map(getColorForPM25);
 
                 const chart = new Chart(ctx, {
                     type: 'bar',
@@ -164,7 +171,7 @@
                 const updateChart = () => {
                     showingPM25 = !showingPM25;
                     values = showingPM25 ? pm25Data : pm10Data;
-                    colors = values.map(getColorForValue);
+                    colors = values.map(showingPM25 ? getColorForPM25 : getColorForPM10);
                     chart.data.datasets[0].data = values;
                     chart.data.datasets[0].backgroundColor = colors;
                     chart.data.datasets[0].borderColor = colors;
@@ -172,6 +179,7 @@
                     chart.update();
                     if (labelEl) labelEl.innerText = showingPM25 ? 'PM2.5' : 'PM10';
                 };
+
 
                 const intervalId = setInterval(() => {
                     if (!canvas.closest('.leaflet-popup')) {
