@@ -1,0 +1,34 @@
+﻿@model AlertThresholdSettings
+
+<h2 class="mb-4">Configure Alert Thresholds</h2>
+
+<form asp-action="ConfigureAlerts" method="post">
+    <div class="card shadow-sm p-4">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <label class="form-label">PM2.5 Threshold</label>
+                <input asp-for="PM25Threshold" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">PM10 Threshold</label>
+                <input asp-for="PM10Threshold" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">R.H. (%) Threshold</label>
+                <input asp-for="RHThreshold" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Temperature (°C) Threshold</label>
+                <input asp-for="TempThreshold" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Wind Speed (m/s) Threshold</label>
+                <input asp-for="WindThreshold" class="form-control" />
+            </div>
+        </div>
+
+        <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary">Save Thresholds</button>
+        </div>
+    </div>
+</form>

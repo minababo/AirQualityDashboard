@@ -13,5 +13,6 @@
         public List<DateTime> TrendTimestamps { get; set; }
         public List<double> TrendPM25 { get; set; }
         public List<double> TrendPM10 { get; set; }
+        public bool IsActive { get; set; }
     }
 }

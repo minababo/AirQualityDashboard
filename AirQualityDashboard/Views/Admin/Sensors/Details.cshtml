@@ -4,6 +4,9 @@
 @{
     ViewData["Title"] = "Sensor Details";
     var selectedFilter = Model.Filter ?? "24h";
+    var currentSort = Context.Request.Query["sortOrder"].ToString() ?? "timestamp";
+    var isDesc = currentSort.EndsWith("_desc");
+    string sortIcon = isDesc ? "↓" : "↑";
 
     var latestReading = Model.LatestReading;
     string aqiLevel = "Unknown";
@@ -12,30 +15,16 @@
     if (latestReading != null)
     {
         double aqi = latestReading.PM25;
-        if (aqi <= 50)
-        {
-            aqiLevel = "Good";
-            aqiBadge = "bg-success";
-            aqiColor = "#009966";
-        }
-        else if (aqi <= 100)
-        {
-            aqiLevel = "Moderate";
-            aqiBadge = "bg-warning";
-            aqiColor = "#ffc107";
-        }
-        else if (aqi <= 150)
-        {
-            aqiLevel = "Unhealthy";
-            aqiBadge = "bg-danger";
-            aqiColor = "#DC3545";
-        }
-        else
-        {
-            aqiLevel = "Hazardous";
-            aqiBadge = "bg-dark";
-            aqiColor = "#212529";
-        }
+        if (aqi <= 50) { aqiLevel = "Good"; aqiBadge = "bg-success"; aqiColor = "#009966"; }
+        else if (aqi <= 100) { aqiLevel = "Moderate"; aqiBadge = "bg-warning"; aqiColor = "#ffc107"; }
+        else if (aqi <= 150) { aqiLevel = "Unhealthy"; aqiBadge = "bg-danger"; aqiColor = "#DC3545"; }
+        else { aqiLevel = "Hazardous"; aqiBadge = "bg-dark"; aqiColor = "#212529"; }
+    }
+
+    string GetSortOrder(string field)
+    {
+        return currentSort == field ? $"{field}_desc" :
+               currentSort == $"{field}_desc" ? field : field;
     }
 }
 
@@ -82,14 +71,45 @@
     <table class="table table-bordered">
         <thead class="thead-dark">
             <tr>
-                <th>Timestamp</th>
-                <th>PM2.5</th>
-                <th>PM10</th>
-                <th>R.H. (%)</th>
-                <th>Temp (°C)</th>
-                <th>Wind (m/s)</th>
+                <th>
+                    <a asp-action="Details" style="color:black" asp-route-id="@Model.Sensor.SensorId" asp-route-filter="@Model.Filter" asp-route-sortOrder="@GetSortOrder("timestamp")">
+                        Timestamp @if (currentSort.StartsWith("timestamp"))
+                        {
+                            <text>@sortIcon</text>
+                        }</a></th>
+                <th>
+                    <a asp-action="Details" style="color:black" asp-route-id="@Model.Sensor.SensorId" asp-route-filter="@Model.Filter" asp-route-sortOrder="@GetSortOrder("pm25")">
+                        PM2.5 @if (currentSort.StartsWith("pm25"))
+                        {
+                            <text>@sortIcon</text>
+                        }</a></th>
+                <th>
+                    <a asp-action="Details" style="color:black" asp-route-id="@Model.Sensor.SensorId" asp-route-filter="@Model.Filter" asp-route-sortOrder="@GetSortOrder("pm10")">
+                        PM10 @if (currentSort.StartsWith("pm10"))
+                        {
+                            <text>@sortIcon</text>
+                        }</a></th>
+                <th>
+                    <a asp-action="Details" style="color:black" asp-route-id="@Model.Sensor.SensorId" asp-route-filter="@Model.Filter" asp-route-sortOrder="@GetSortOrder("rh")">
+                        R.H. (%) @if (currentSort.StartsWith("rh"))
+                        {
+                            <text>@sortIcon</text>
+                        }</a></th>
+                <th>
+                    <a asp-action="Details" style="color:black" asp-route-id="@Model.Sensor.SensorId" asp-route-filter="@Model.Filter" asp-route-sortOrder="@GetSortOrder("temp")">
+                        Temp (°C) @if (currentSort.StartsWith("temp"))
+                        {
+                            <text>@sortIcon</text>
+                        }</a></th>
+                <th>
+                    <a asp-action="Details" style="color:black" asp-route-id="@Model.Sensor.SensorId" asp-route-filter="@Model.Filter" asp-route-sortOrder="@GetSortOrder("wind")">
+                        Wind (m/s) @if (currentSort.StartsWith("wind"))
+                        {
+                            <text>@sortIcon</text>
+                        }</a></th>
             </tr>
         </thead>
+
         <tbody>
             @foreach (var reading in Model.PagedAQIData)
             {
@@ -127,9 +147,9 @@
 
                 string windClass = reading.Wind switch
                 {
-                    <= 1 => "table-warning",
-                    <= 3 => "table-success",
-                    <= 5 => "table-danger",
+                    <= 5 => "table-warning",
+                    <= 15 => "table-success",
+                    <= 20 => "table-danger",
                     _ => "table-dark"
                 };
 
@@ -155,21 +175,21 @@
                 if (start > 1)
                 {
                     <li class="page-item">
-                        <a class="page-link" href="@Url.Action("Details", new { id = Model.Sensor.SensorId, filter = Model.Filter, page = start - 1 })">&laquo;</a>
+                        <a class="page-link" href="@Url.Action("Details", new { id = Model.Sensor.SensorId, filter = Model.Filter, page = start - 1, sortOrder = currentSort })">&laquo;</a>
                     </li>
                 }
 
                 for (int i = start; i <= end; i++)
                 {
                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                        <a class="page-link" href="@Url.Action("Details", new { id = Model.Sensor.SensorId, filter = Model.Filter, page = i })">@i</a>
+                        <a class="page-link" href="@Url.Action("Details", new { id = Model.Sensor.SensorId, filter = Model.Filter, page = i, sortOrder = currentSort })">@i</a>
                     </li>
                 }
 
                 if (end < Model.TotalPages)
                 {
                     <li class="page-item">
-                        <a class="page-link" href="@Url.Action("Details", new { id = Model.Sensor.SensorId, filter = Model.Filter, page = end + 1 })">&raquo;</a>
+                        <a class="page-link" href="@Url.Action("Details", new { id = Model.Sensor.SensorId, filter = Model.Filter, page = end + 1, sortOrder = currentSort })">&raquo;</a>
                     </li>
                 }
             }
@@ -178,7 +198,7 @@
                 @for (int i = 1; i <= Model.TotalPages; i++)
                 {
                     <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                        <a class="page-link" href="@Url.Action("Details", new { id = Model.Sensor.SensorId, filter = Model.Filter, page = i })">@i</a>
+                        <a class="page-link" href="@Url.Action("Details", new { id = Model.Sensor.SensorId, filter = Model.Filter, page = i, sortOrder = currentSort })">@i</a>
                     </li>
                 }
             }

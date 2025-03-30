@@ -1,21 +1,45 @@
 ﻿@{
     ViewData["Title"] = "Admin Dashboard";
+    var alerts = ViewBag.Alerts as List<dynamic> ?? new List<dynamic>();
 }
 
 <style>
     .dashboard-wrapper {
-        min-height: calc(100vh - 120px); /* Adjust based on navbar/footer height */
+        min-height: calc(100vh - 120px);
         display: flex;
         align-items: center;
         justify-content: center;
         flex-direction: column;
     }
+
+    .alert-box {
+        margin-top: 20px;
+    }
+
+    .alert-card {
+        background-color: #f8d7da;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+        .alert-card ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+
+        .alert-card li {
+            margin-bottom: 4px;
+        }
 </style>
 
 <div class="dashboard-wrapper">
     <h1 class="mb-4">Admin Dashboard</h1>
 
     <div class="container">
+
         <div class="row justify-content-center mb-4">
             <div class="col-md-6 col-lg-5 mb-4">
                 <div class="card shadow-sm">
@@ -30,14 +54,9 @@
             <div class="col-md-6 col-lg-5 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title">Simulation Control</h5>
-                        <p>Status: <strong>@ViewBag.SimulationStatus</strong></p>
-                        <form method="post" asp-action="StartSimulation" style="display:inline;">
-                            <button type="submit" class="btn btn-warning">Start</button>
-                        </form>
-                        <form method="post" asp-action="StopSimulation" style="display:inline;">
-                            <button type="submit" class="btn btn-danger">Stop</button>
-                        </form>
+                        <h5 class="card-title">System Status</h5>
+                        <p>Total Sensors: <strong>@ViewBag.TotalSensors</strong></p>
+                        <p>Total Active Sensors: <strong>@ViewBag.ActiveSensors</strong></p>
                     </div>
                 </div>
             </div>
@@ -47,9 +66,14 @@
             <div class="col-md-6 col-lg-5 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title">System Status</h5>
-                        <p>Total Sensors: <strong>@ViewBag.TotalSensors</strong></p>
-                        <p>Total Active Sensors: <strong>@ViewBag.ActiveSensors</strong></p>
+                        <h5 class="card-title">Simulation Control</h5>
+                        <p>Status: <strong>@ViewBag.SimulationStatus</strong></p>
+                        <form method="post" asp-action="StartSimulation" style="display:inline;">
+                            <button type="submit" class="btn btn-warning">Start</button>
+                        </form>
+                        <form method="post" asp-action="StopSimulation" style="display:inline;">
+                            <button type="submit" class="btn btn-danger">Stop</button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -63,6 +87,65 @@
                     </div>
                 </div>
             </div>
+
+            <div class="col-md-6 col-lg-5 mb-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Configure Alerts</h5>
+                        <p>Set threshold values to trigger alerts.</p>
+                        <a href="/Admin/ConfigureAlerts" class="btn btn-danger">Edit Alerts</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-5 mb-4" id="alert-box">
+                @if (alerts.Count > 0)
+                {
+                    <div class="alert-card">
+                        <strong>⚠ Active Alerts:</strong>
+                        <ul>
+                            @foreach (var alert in alerts)
+                            {
+                                <li>
+                                    <a href="/Sensor/Details/@alert.SensorId" class="text-danger text-decoration-none">
+                                        @alert.Message
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    function refreshAlerts() {
+        fetch('/Admin/GetActiveAlerts')
+            .then(response => response.json())
+            .then(alerts => {
+                const alertBox = document.getElementById("alert-box");
+                if (!alertBox) return;
+
+                if (alerts.length > 0) {
+                    let html = `
+                        <div class="alert-card">
+                            <strong>⚠ Active Alerts:</strong>
+                            <ul>
+                                ${alerts.map(a =>
+                                    `<li><a href="/Sensor/Details/${a.sensorId}" class="text-danger text-decoration-none">${a.message}</a></li>`
+                                ).join("")}
+                            </ul>
+                        </div>
+                    `;
+                    alertBox.innerHTML = html;
+                } else {
+                    alertBox.innerHTML = "";
+                }
+            });
+    }
+
+    setInterval(refreshAlerts, 15000);
+    refreshAlerts();
+</script>

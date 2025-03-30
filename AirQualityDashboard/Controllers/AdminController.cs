@@ -28,14 +28,59 @@ public class AdminController : Controller
         ViewBag.ActiveSensors = activeSensors;
         ViewBag.SimulationStatus = _generatorService.IsRunning ? "Running" : "Paused";
 
+        var threshold = await _context.AlertThresholdSettings.FirstOrDefaultAsync();
+        var alerts = new List<string>();
+
+        if (threshold != null)
+        {
+            var latest = _context.AQIData
+                .Include(a => a.Sensor)
+                .GroupBy(a => a.SensorId)
+                .Select(g => g.OrderByDescending(r => r.Timestamp).FirstOrDefault())
+                .ToList();
+
+            foreach (var r in latest)
+            {
+                if (r.PM25 > threshold.PM25Threshold) alerts.Add($"{r.Sensor.SensorName} - PM2.5 exceeded threshold");
+                if (r.PM10 > threshold.PM10Threshold) alerts.Add($"{r.Sensor.SensorName} - PM10 exceeded threshold");
+                if (r.RH > threshold.RHThreshold) alerts.Add($"{r.Sensor.SensorName} - Humidity exceeded threshold");
+                if (r.Temp > threshold.TempThreshold) alerts.Add($"{r.Sensor.SensorName} - Temperature exceeded threshold");
+                if (r.Wind > threshold.WindThreshold) alerts.Add($"{r.Sensor.SensorName} - Wind speed exceeded threshold");
+            }
+        }
+
+        ViewBag.Alerts = alerts;
+
         return View("Dashboard");
     }
 
-    public IActionResult Sensors()
+    public IActionResult Sensors(string sortOrder)
     {
-        var sensors = _context.Sensors.ToList();
-        return View("Sensors/Index", sensors);
+        ViewBag.NameSortParm = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+        ViewBag.LocationSortParm = sortOrder == "location" ? "location_desc" : "location";
+
+        var sensors = from s in _context.Sensors
+                      select s;
+
+        switch (sortOrder)
+        {
+            case "name_desc":
+                sensors = sensors.OrderByDescending(s => s.SensorName);
+                break;
+            case "location":
+                sensors = sensors.OrderBy(s => s.LocationName);
+                break;
+            case "location_desc":
+                sensors = sensors.OrderByDescending(s => s.LocationName);
+                break;
+            default:
+                sensors = sensors.OrderBy(s => s.SensorName);
+                break;
+        }
+
+        return View("Sensors/Index", sensors.ToList());
     }
+
 
     public IActionResult Create()
     {
@@ -113,7 +158,7 @@ public class AdminController : Controller
     }
 
     [AllowAnonymous]
-    public async Task<IActionResult> Details(int? id, string filter = "24h", int page = 1)
+    public async Task<IActionResult> Details(int? id, string filter = "24h", int page = 1, string sortOrder = "timestamp_desc")
     {
         if (id == null) return NotFound();
 
@@ -131,9 +176,26 @@ public class AdminController : Controller
         };
 
         var filteredRecords = sensor.AQIDataRecords
-            .Where(r => r.Timestamp >= fromDate)
-            .OrderByDescending(r => r.Timestamp)
-            .ToList();
+        .Where(r => r.Timestamp >= fromDate)
+        .ToList();
+
+            filteredRecords = sortOrder switch
+            {
+                "timestamp" => filteredRecords.OrderBy(r => r.Timestamp).ToList(),
+                "pm25" => filteredRecords.OrderBy(r => r.PM25).ToList(),
+                "pm10" => filteredRecords.OrderBy(r => r.PM10).ToList(),
+                "rh" => filteredRecords.OrderBy(r => r.RH).ToList(),
+                "temp" => filteredRecords.OrderBy(r => r.Temp).ToList(),
+                "wind" => filteredRecords.OrderBy(r => r.Wind).ToList(),
+                "timestamp_desc" => filteredRecords.OrderByDescending(r => r.Timestamp).ToList(),
+                "pm25_desc" => filteredRecords.OrderByDescending(r => r.PM25).ToList(),
+                "pm10_desc" => filteredRecords.OrderByDescending(r => r.PM10).ToList(),
+                "rh_desc" => filteredRecords.OrderByDescending(r => r.RH).ToList(),
+                "temp_desc" => filteredRecords.OrderByDescending(r => r.Temp).ToList(),
+                "wind_desc" => filteredRecords.OrderByDescending(r => r.Wind).ToList(),
+                _ => filteredRecords.OrderByDescending(r => r.Timestamp).ToList()
+            };
+
 
         int pageSize = 10;
         int totalPages = (int)Math.Ceiling((double)filteredRecords.Count / pageSize);
@@ -211,14 +273,87 @@ public class AdminController : Controller
     {
         var existing = await _context.SimulationSettings.FirstOrDefaultAsync();
         if (existing == null)
+        {
             _context.SimulationSettings.Add(model);
+        }
         else
         {
-            _context.Entry(existing).CurrentValues.SetValues(model);
+            existing.PM25Min = model.PM25Min;
+            existing.PM25Max = model.PM25Max;
+            existing.PM10Min = model.PM10Min;
+            existing.PM10Max = model.PM10Max;
+            existing.RHMin = model.RHMin;
+            existing.RHMax = model.RHMax;
+            existing.TempMin = model.TempMin;
+            existing.TempMax = model.TempMax;
+            existing.WindMin = model.WindMin;
+            existing.WindMax = model.WindMax;
         }
 
         await _context.SaveChangesAsync();
         return RedirectToAction("Dashboard");
+    }
+
+    public async Task<IActionResult> ConfigureAlerts()
+    {
+        var settings = await _context.AlertThresholdSettings.FirstOrDefaultAsync() ?? new AlertThresholdSettings();
+        return View(settings);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConfigureAlerts(AlertThresholdSettings model)
+    {
+        var existing = await _context.AlertThresholdSettings.FirstOrDefaultAsync();
+        if (existing == null)
+        {
+            _context.AlertThresholdSettings.Add(model);
+        }
+        else
+        {
+            existing.PM25Threshold = model.PM25Threshold;
+            existing.PM10Threshold = model.PM10Threshold;
+            existing.RHThreshold = model.RHThreshold;
+            existing.TempThreshold = model.TempThreshold;
+            existing.WindThreshold = model.WindThreshold;
+        }
+
+        await _context.SaveChangesAsync();
+        return RedirectToAction("Dashboard");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetActiveAlerts()
+    {
+        var threshold = await _context.AlertThresholdSettings.FirstOrDefaultAsync();
+        var alerts = new List<object>();
+
+        if (threshold != null)
+        {
+            var latest = _context.AQIData
+                .Include(a => a.Sensor)
+                .GroupBy(a => a.SensorId)
+                .Select(g => g.OrderByDescending(r => r.Timestamp).FirstOrDefault())
+                .ToList();
+
+            foreach (var r in latest)
+            {
+                if (r == null || r.Sensor == null) continue;
+
+                if (r.PM25 > threshold.PM25Threshold)
+                    alerts.Add(new { sensorId = r.Sensor.SensorId, message = $"{r.Sensor.SensorName} - PM2.5 exceeded threshold" });
+                if (r.PM10 > threshold.PM10Threshold)
+                    alerts.Add(new { sensorId = r.Sensor.SensorId, message = $"{r.Sensor.SensorName} - PM10 exceeded threshold" });
+                if (r.RH > threshold.RHThreshold)
+                    alerts.Add(new { sensorId = r.Sensor.SensorId, message = $"{r.Sensor.SensorName} - Humidity exceeded threshold" });
+                if (r.Temp > threshold.TempThreshold)
+                    alerts.Add(new { sensorId = r.Sensor.SensorId, message = $"{r.Sensor.SensorName} - Temperature exceeded threshold" });
+                if (r.Wind > threshold.WindThreshold)
+                    alerts.Add(new { sensorId = r.Sensor.SensorId, message = $"{r.Sensor.SensorName} - Wind speed exceeded threshold" });
+            }
+        }
+
+        return Json(alerts);
     }
 
 }

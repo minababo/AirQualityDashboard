@@ -56,7 +56,7 @@ public class AQIDataGeneratorService : BackgroundService
                         PM10 = RandomOrDefault(settings?.PM10Min ?? 10, settings?.PM10Max ?? 260, 10, 260),
                         RH = RandomOrDefault(settings?.RHMin ?? 50, settings?.RHMax ?? 100, 50, 100),
                         Temp = RandomOrDefault(settings?.TempMin ?? 25, settings?.TempMax ?? 35, 25, 35),
-                        Wind = RandomOrDefault(settings?.WindMin ?? 0, settings?.WindMax ?? 5, 0, 5)
+                        Wind = RandomOrDefault(settings?.WindMin ?? 0, settings?.WindMax ?? 22, 0, 22)
                     };
 
 

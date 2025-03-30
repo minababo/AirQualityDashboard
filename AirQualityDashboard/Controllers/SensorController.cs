@@ -27,7 +27,7 @@ namespace AirQualityDashboard.Controllers
         }
 
         [AllowAnonymous]
-        public async Task<IActionResult> Details(int? id, string filter = "24h", int page = 1)
+        public async Task<IActionResult> Details(int? id, string filter = "24h", int page = 1, string sortOrder = "timestamp_desc")
         {
             if (id == null) return NotFound();
 
@@ -41,15 +41,30 @@ namespace AirQualityDashboard.Controllers
             {
                 "7d" => DateTime.Now.AddDays(-7),
                 "30d" => DateTime.Now.AddDays(-30),
-                "all" => DateTime.MinValue,
                 _ => DateTime.Now.AddHours(-24)
             };
 
-
             var filteredRecords = sensor.AQIDataRecords
-                .Where(r => r.Timestamp >= fromDate)
-                .OrderByDescending(r => r.Timestamp)
-                .ToList();
+            .Where(r => r.Timestamp >= fromDate)
+            .ToList();
+
+            filteredRecords = sortOrder switch
+            {
+                "timestamp" => filteredRecords.OrderBy(r => r.Timestamp).ToList(),
+                "pm25" => filteredRecords.OrderBy(r => r.PM25).ToList(),
+                "pm10" => filteredRecords.OrderBy(r => r.PM10).ToList(),
+                "rh" => filteredRecords.OrderBy(r => r.RH).ToList(),
+                "temp" => filteredRecords.OrderBy(r => r.Temp).ToList(),
+                "wind" => filteredRecords.OrderBy(r => r.Wind).ToList(),
+                "timestamp_desc" => filteredRecords.OrderByDescending(r => r.Timestamp).ToList(),
+                "pm25_desc" => filteredRecords.OrderByDescending(r => r.PM25).ToList(),
+                "pm10_desc" => filteredRecords.OrderByDescending(r => r.PM10).ToList(),
+                "rh_desc" => filteredRecords.OrderByDescending(r => r.RH).ToList(),
+                "temp_desc" => filteredRecords.OrderByDescending(r => r.Temp).ToList(),
+                "wind_desc" => filteredRecords.OrderByDescending(r => r.Wind).ToList(),
+                _ => filteredRecords.OrderByDescending(r => r.Timestamp).ToList()
+            };
+
 
             int pageSize = 10;
             int totalPages = (int)Math.Ceiling((double)filteredRecords.Count / pageSize);
@@ -61,7 +76,7 @@ namespace AirQualityDashboard.Controllers
 
             var now = DateTime.UtcNow;
             var hourlyAverages = _context.AQIData
-                .Where(r => r.SensorId == id && r.Timestamp >= fromDate)
+                .Where(r => r.SensorId == id && r.Timestamp >= now.AddHours(-48))
                 .AsEnumerable()
                 .GroupBy(r => new DateTime(r.Timestamp.Year, r.Timestamp.Month, r.Timestamp.Day, r.Timestamp.Hour, 0, 0))
                 .Select(g => new HourlyAverage
@@ -70,12 +85,11 @@ namespace AirQualityDashboard.Controllers
                     PM25 = g.Average(x => x.PM25),
                     PM10 = g.Average(x => x.PM10),
                     RH = g.Average(x => x.RH),
-                    Temp = g.Average(x => x.Temp),
+                    Temp = g.Average(x => x.Temp),  
                     Wind = g.Average(x => x.Wind)
                 })
                 .OrderBy(x => x.Timestamp)
                 .ToList();
-
 
             var latestReading = sensor.AQIDataRecords
                 .OrderByDescending(r => r.Timestamp)
@@ -93,7 +107,7 @@ namespace AirQualityDashboard.Controllers
                 LatestReading = latestReading
             };
 
-            return View(viewModel);
+            return View("Details", viewModel);
         }
     }
 }
